@@ -1,4 +1,5 @@
 import time
+import asyncio
 import discord
 from discord.ext import commands
 from discord.utils import get
@@ -12,7 +13,8 @@ from bot_functions import *
 
 ##############################################################################
 
-TOKEN = ''
+with open('token.txt') as f:
+    TOKEN = f.readline()
 BOT_PREFIX = '>'
 
 bot = commands.Bot(command_prefix = BOT_PREFIX)
@@ -64,6 +66,10 @@ async def on_message(message):
     #serving up hot audio clips
     if message.content.startswith('>grab'):
         await grab_clip(message)
+       
+    #Rhythm, your days are numbered
+    if message.content.startswith('!p'):
+        await message.channel.send('Support local. Use: `>play URL TIMECODE`')
             
 ##############################################################################
 
@@ -76,38 +82,34 @@ async def on_voice_state_update(member, before, after):
 
         channel = after.channel
         voice = get(bot.voice_clients)
-
     #make sure bot not trying to join itself and user has joined a new channel
     if member.id != bot.user.id and after.channel != None and after.channel != before.channel:
 
-        #if bot in voice channel already, move to new channel
-        #DOES NOT ACTUALLY DO ANYTHING HAS TO DO WITH THE SLEEP FUNCTION
+        #if bot in voice channel already, don't do anything
         if voice:
-            await voice.move_to(channel)
-
+            print('Bot already in channel')
         #connect to channel
-        #THROWS ERROR IF USER JOINS ANOTHER CHANNEL BEFORE BOT LEAVES CURRENT
         else:
             voice = await channel.connect()
             print(f'Bot connected to: {channel}\n')
 
-        #determine which audio file to play
-        audio = str(member.id) + '.mp3'
-        found_audio = False      
-        for file in os.listdir('./'):
-            if audio == file:
-                found_audio = True
-                break
+            #determine which audio file to play
+            audio = str(member.id) + '.mp3'
+            found_audio = False      
+            for file in os.listdir('./'):
+                if audio == file:
+                    found_audio = True
+                    break
 
-        #play personal greeting
-        if found_audio:
-            play_audio(audio, voice)
-        #play default greeting
-        else:
-            play_audio('audio_default.mp3', voice)
-        
-        time.sleep(10) #CHANGE THIS TO FIX
-        await voice.disconnect()
+            #play personal greeting
+            if found_audio:
+                play_audio(audio, voice)
+            #play default greeting
+            else:
+                play_audio('audio_default.mp3', voice)
+            
+            await asyncio.sleep(8)
+            await voice.disconnect()
             
 ##############################################################################
 

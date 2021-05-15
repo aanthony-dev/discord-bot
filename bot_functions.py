@@ -1,6 +1,8 @@
 import sys
 import os
 import random
+import asyncio
+from datetime import datetime
 import youtube_dl
 import wikipedia
 import discord
@@ -26,6 +28,13 @@ CLIP_LENGTH = 7
 #do you need help? me too
 async def help(message):
     await message.channel.send('I\'m a work in progress. Ask my dev... <@!258324838266044418>')
+    await message.channel.send('`>clip URL TIMECODE` To set your voice channel intro. Get your best 7 second clip.\n' + 
+    '`>play URL TIMECODE` To play a video in your voice channel.\n' +
+    '`>stop` To make me leave the voice channel.\n' +
+    '`>grab URL TIMECODE` To have me download and serve you up 7 seconds of audio.\n' +
+    '`>wiki "SEARCH"` To have me read a wikipedia article directly into your ears.\n' +
+    '`>more` To continue hearing me read wikipedia.\n' +
+    '`>mock @USER` To have me mock a user\'s last message.\n')
 
 ##############################################################################
 
@@ -161,7 +170,6 @@ async def mock(message):
 ##############################################################################
 
 #let's jam    
-#TODO: optional timecode to start playing at
 async def play_youtube(message):
     msg = message.content.split(' ')
     url = msg[1]
@@ -169,7 +177,7 @@ async def play_youtube(message):
     try:
         timecode = msg[2]
     except:
-        print("No timecode supplied.")
+        pass
     
     song_exists = os.path.isfile('download.mp3')
     try:
@@ -179,8 +187,6 @@ async def play_youtube(message):
     except PermissionError:
         print('Failed To Remove Audio - Currently Playing')
         return
-
-    await message.channel.send('Preparing')
     
     print('VOICE CHANNEL: ' + str(message.author.voice.channel))
 
@@ -195,20 +201,42 @@ async def play_youtube(message):
     }
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         print('Downloading Audio\n')
-        ydl.download([url])
+        dictMeta = ydl.extract_info(url, download=False)
+    
+        if dictMeta['duration'] < 600:
+            await message.channel.send('Preparing.')
+            ydl.download([url])
+        else:
+            await message.channel.send('No one wants to listen to this for that long.')
+            return
         
     #cut download file down to start at given timecode
     if timecode is not None:
         ff = FFmpeg(
             inputs={'download.mp3': '-ss {0}'.format(timecode)},
-            outputs={'download_trim.mp3': '-y -t'}
+            outputs={'download_trim.mp3': '-y -t {0}'.format(dictMeta['duration'])}
         )
         ff.run()
         voice = await message.author.voice.channel.connect()
-        play_audio('download.mp3', voice)
+        play_audio('download_trim.mp3', voice)
+        try:
+            timecode = int(timecode)
+        except:
+            pass
+            
+        if type(timecode) is int:
+            time = int(timecode)          
+        else:
+            time = datetime.strptime(timecode, '%M:%S')
+            time = time.second + time.minute * 60
+            
+        await asyncio.sleep(dictMeta['duration'] - time)
+        await voice.disconnect()
     else:
         voice = await message.author.voice.channel.connect()
         play_audio('download.mp3', voice)
+        await asyncio.sleep(dictMeta['duration'])
+        await voice.disconnect()
 
 ##############################################################################
 
