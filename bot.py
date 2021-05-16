@@ -47,8 +47,12 @@ async def on_message(message):
     if message.content.startswith('>more'):
         await wiki_search(message, True)
     
-    #set user voice channel intro
+    #old command for setting intro
     if message.content.startswith('>clip'):
+        await message.channel.send('Command has changed. Use: `>intro URL TIMECODE`')
+        
+    #set user voice channel intro
+    if message.content.startswith('>intro'):
         set_clip(message, str(message.author.id))
         
     #mock the last message of a user
@@ -66,6 +70,9 @@ async def on_message(message):
     #serving up hot audio clips
     if message.content.startswith('>grab'):
         await grab_clip(message)
+     
+    if message.content.startswith('>meme'):
+       await make_meme(message)
        
     #Rhythm, your days are numbered
     if message.content.startswith('!p'):

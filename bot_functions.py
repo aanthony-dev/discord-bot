@@ -10,6 +10,7 @@ from discord.ext import commands
 from discord.utils import get
 
 from ffmpy import FFmpeg
+from memes import *
 
 ##############################################################################
 
@@ -28,13 +29,14 @@ CLIP_LENGTH = 7
 #do you need help? me too
 async def help(message):
     await message.channel.send('I\'m a work in progress. Ask my dev... <@!258324838266044418>')
-    await message.channel.send('`>clip URL TIMECODE` To set your voice channel intro. Get your best 7 second clip.\n' + 
-    '`>play URL TIMECODE` To play a video in your voice channel.\n' +
-    '`>stop` To make me leave the voice channel.\n' +
-    '`>grab URL TIMECODE` To have me download and serve you up 7 seconds of audio.\n' +
-    '`>wiki "SEARCH"` To have me read a wikipedia article directly into your ears.\n' +
-    '`>more` To continue hearing me read wikipedia.\n' +
-    '`>mock @USER` To have me mock a user\'s last message.\n')
+    await message.channel.send('`>intro URL TIMECODE`\nTo set your voice channel intro. Get your best 7 second Youtube clip.\n' + 
+    '`>play URL TIMECODE`\nTo play a video in your voice channel.\n' +
+    '`>stop`\nTo make me leave the voice channel.\n' +
+    '`>meme URL TEXT`\nHave me make the meme because you\'re too lazy to do it yourself.\n'
+    '`>grab URL TIMECODE`\nTo have me download and serve you up 7 seconds of audio.\n' +
+    '`>wiki "SEARCH"`\nTo have me read a wikipedia article directly into your ears.\n' +
+    '`>more`\nTo continue hearing me read wikipedia.\n' +
+    '`>mock @USER`\nTo have me mock a user\'s last message.\n')
 
 ##############################################################################
 
@@ -247,3 +249,23 @@ async def leave_voice(message):
         await voice.disconnect()
     except:
         await message.channel.send('To disconnect or not disconnect, that is the question.')
+
+##############################################################################
+
+#let your creativity run free
+async def make_meme(message):
+    msg = message.content.split(' ')
+    url = msg[1]
+    text = msg[2:]
+    text_split = int(len(text) / 2)
+    print(text)
+    print(int(len(text) / 2))
+    top_text = ' '.join(text[0:text_split])
+    bottom_text = ' '.join(text[text_split:])
+    print(top_text)
+    print(bottom_text)
+    
+    create_image(url, top_text, bottom_text)
+    await message.channel.send('Mmmmm fresh memes:', file=discord.File('meme.png'))
+
+    
