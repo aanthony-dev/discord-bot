@@ -1,0 +1,4 @@
+__pycache__/
+*.txt
+*.mp3
+!audio_default.mp3

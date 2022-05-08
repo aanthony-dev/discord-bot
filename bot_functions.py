@@ -2,6 +2,8 @@ import sys
 import os
 import random
 import asyncio
+import requests
+import time as realtime
 from datetime import datetime
 import youtube_dl
 import wikipedia
@@ -65,7 +67,7 @@ def set_clip(message, user_id):
         }],
     }
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-        print('Downloading Audio\n')
+        print(realtime.ctime(realtime.time()), '\t', 'Downloading Audio')
         ydl.download([url])
 
     output_name = user_id + '.mp3'
@@ -81,9 +83,15 @@ def set_clip(message, user_id):
     try:
         os.remove('set_clip.mp3')
     except PermissionError:
-        print('Failed To Remove Download File')
+        print(realtime.ctime(realtime.time()), '\t', 'Failed To Remove Download File')
         
 ##############################################################################
+
+def callable_hook(response):
+    if response['status'] == 'downloading':
+        speed = response['speed']
+        downloaded_percent = round((response['downloaded_bytes'] * 100) / response['total_bytes'], 1)
+        print('TEST:' + str(downloaded_percent))
 
 #upload a hot audio clip straight to discord        
 async def grab_clip(message):
@@ -93,7 +101,9 @@ async def grab_clip(message):
     
     #download audio from url
     ydl_opts = {
+        'verbose': False,
         'format': 'bestaudio/best',
+        'progress_hooks': [callable_hook],
         'outtmpl': 'grab_clip_raw.mp3', #name of downloaded file
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
@@ -101,24 +111,26 @@ async def grab_clip(message):
             'preferredquality': '192',
         }],
     } 
+    #async with message.channel.typing():
+    await message.channel.send('Download Percentage: ' + str(0) + '%')
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-        print('Downloading Audio\n')
+        print(realtime.ctime(realtime.time()), '\t', 'Downloading Audio')
         ydl.download([url])
         
     #cut download file down to clip length (curse discord upload limits)
     ff = FFmpeg(
-        inputs={'grab_clip_raw.mp3': '-ss {0}'.format(time)},
+        inputs={'grab_clip_raw.mp3': '-ss {0} -hide_banner -loglevel error'.format(time)},
         outputs={'grab_clip.mp3': '-y -t {0}'.format(CLIP_LENGTH)}
     )
     ff.run()
-    
+
     await message.channel.send('Serving up the hottest clips:', file=discord.File('grab_clip.mp3'))
     
     #remove downloaded file
     try:
         os.remove('grab_clip_raw.mp3')
     except PermissionError:
-        print('Failed To Remove Download File')
+        print(realtime.ctime(realtime.time()), '\t', 'Failed To Remove Download File')
     
 ##############################################################################
 
@@ -185,12 +197,12 @@ async def play_youtube(message):
     try:
         if song_exists:
             os.remove('download.mp3')
-            print('Previous Audio Removed')
+            print(realtime.ctime(realtime.time()), '\t', 'Previous Audio Removed')
     except PermissionError:
-        print('Failed To Remove Audio - Currently Playing')
+        print(realtime.ctime(realtime.time()), '\t', 'Failed To Remove Audio - Currently Playing')
         return
     
-    print('VOICE CHANNEL: ' + str(message.author.voice.channel))
+    print(realtime.ctime(realtime.time()), '\t', 'VOICE CHANNEL: ' + str(message.author.voice.channel))
 
     ydl_opts = {
         'format': 'bestaudio/best',
@@ -202,7 +214,7 @@ async def play_youtube(message):
         }],
     }
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-        print('Downloading Audio\n')
+        print(realtime.ctime(realtime.time()), '\t', 'Downloading Audio\n')
         dictMeta = ydl.extract_info(url, download=False)
     
         if dictMeta['duration'] < 600:
@@ -267,5 +279,26 @@ async def make_meme(message):
     
     create_image(url, top_text, bottom_text)
     await message.channel.send('Mmmmm fresh memes:', file=discord.File('meme.png'))
+
+############################### WIP #########################################
+
+async def roomba():
+    print(realtime.ctime(realtime.time()), '\t', Client.guilds)
+
+async def check_stock(message):
+    with requests.get("https://finance.yahoo.com/quote/" + ticker, stream=True) as r:
+        source = r.text
+        source = source.split("<span")
+
+        for line in source:
+            if 'class="Trsdu(0.3s) Fw(b) Fz(36px) Mb(-4px) D(ib)"' in line:
+                line = line.split(">")[1]
+                num = line.split("<")[0]
+                print(num)
+            if 'class="Trsdu(0.3s) Fw(500) Pstart(10px) Fz(24px)' in line:
+                line = line.split(">")[1]
+                num = line.split("<")[0]
+                print(num)
+
 
     
